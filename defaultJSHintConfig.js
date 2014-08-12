@@ -70,6 +70,7 @@ module.exports = {
     spyOn: true,
     xdescribe: true,
     xit: true,
-    angular: true
+    angular: true,
+    inject: true
   }
 };

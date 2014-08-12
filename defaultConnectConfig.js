@@ -1,4 +1,4 @@
 module.exports = {
-  root: ['./example', './build'],
+  root: ['./example', './build', './bower_components'],
   port: 3000
 };

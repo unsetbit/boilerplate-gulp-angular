@@ -8,6 +8,7 @@ var  _ = require('lodash'),
   fs = require('fs'),
   path = require('path'),
   del = require('del'),
+  glob = require('glob'),
   source = require('vinyl-source-stream');
 
 // Gulp Plugins
@@ -105,7 +106,7 @@ module.exports = function(gulp, options){
   //*****************//
   // Local Variables //
   //*****************//
-  var continuous = false;
+  var continuous = (process.argv.indexOf('dev') !== -1);
 
 
   //*******************//
@@ -152,8 +153,6 @@ module.exports = function(gulp, options){
   // execute testing and linting tasks. Also starts a connect server which
   // reloads connected browsers whenever example or build dir changes contents.
   gulp.task('dev', ['example'], function() {
-    continuous = true;
-    
     gulp.watch([
       jsSrc,
       '!' + unitTests
@@ -302,6 +301,12 @@ module.exports = function(gulp, options){
   gulp.task('webdriver-start', ['webdriver-update'], webdriver_standalone);
 
   gulp.task('e2e-test', ['server', 'webdriver-update'], function(){
+    var files = glob.sync(e2eTests);
+    if(!files.length){
+      connect.serverClose();
+      return;
+    }
+
     return gulp.src([e2eTests])
       .pipe(protractor({
         configFile: protractorConfigFile
