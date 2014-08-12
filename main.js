@@ -94,11 +94,11 @@ module.exports = function(gulp, options){
   if(options.reportsDir !== undefined) reportsDir = options.reportsDir;
 
   // DEFAULT COMPONENT CONFIGURATIONS
-  var jsBeautifyConfig = _.assign(require('./defaultJSBeautifyConfig'), options.jsBeautifyConfig);
-  var jsHintConfig = _.assign(require('./defaultJSHintConfig'), options.jsHintConfig);
-  var recessConfig = _.assign(require('./defaultRecessConfig'), options.recessConfig);
-  var connectConfig = _.assign(require('./defaultConnectConfig'), options.connectConfig);
-  var karmaConfig = _.assign(require('./defaultKarmaConfig'), options.karmaConfig);
+  var jsBeautifyConfig = _.merge(require('./defaultJSBeautifyConfig'), options.jsBeautifyConfig);
+  var jsHintConfig = _.merge(require('./defaultJSHintConfig'), options.jsHintConfig);
+  var recessConfig = _.merge(require('./defaultRecessConfig'), options.recessConfig);
+  var connectConfig = _.merge(require('./defaultConnectConfig'), options.connectConfig);
+  var karmaConfig = _.merge(require('./defaultKarmaConfig'), options.karmaConfig);
   var protractorConfigFile = options.protractorConfigFile || path.resolve(__dirname, './defaultProtractorConfig');
 
 
@@ -171,14 +171,17 @@ module.exports = function(gulp, options){
     var config = _.assign({},
       karmaConfig,
       {
-        files: [
-          __dirname + '/bower_components/angular/angular.js',
-          __dirname + '/bower_components/angular-mocks/angular-mocks.js',
-          buildDir + '/templates.js',
-          jsSrc,
-          unitTests
-        ]
+        singleRun: false,
+        autoWatch: true,
       });
+
+    config.files = config.files.concat([
+      __dirname + '/bower_components/angular/angular.js',
+      __dirname + '/bower_components/angular-mocks/angular-mocks.js',
+      buildDir + '/templates.js',
+      jsSrc,
+      unitTests
+    ]);
     
     karma.start(config);
   });
@@ -313,16 +316,17 @@ module.exports = function(gulp, options){
     var config = _.assign({},
       karmaConfig,
       {
-        files: [
-          __dirname + '/bower_components/angular/angular.js',
-          __dirname + '/bower_components/angular-mocks/angular-mocks.js',
-          buildDir + '/templates.js',
-          jsSrc,
-          unitTests
-        ],
         singleRun: true,
         autoWatch: false,
       });
+
+    config.files = config.files.concat([
+      __dirname + '/bower_components/angular/angular.js',
+      __dirname + '/bower_components/angular-mocks/angular-mocks.js',
+      buildDir + '/templates.js',
+      jsSrc,
+      unitTests
+    ]);
 
     config.coverageReporter.reporters.push({ type: 'text', dir: 'reports/test/unit/coverage' });
 

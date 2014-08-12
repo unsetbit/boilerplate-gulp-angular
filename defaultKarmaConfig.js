@@ -4,7 +4,7 @@ module.exports = {
 
   preprocessors: {
     'src/**/!(*Spec).js': ['coverage'],
-    'src/**/*.js': ['commonjs'],
+    'src/**/*.js': ['commonjs']
   },
 
   reporters: ['coverage', 'junit', 'progress'],
