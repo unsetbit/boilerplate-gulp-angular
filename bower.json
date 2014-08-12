@@ -1,0 +1,20 @@
+{
+  "name": "boilerplate-gulp-angular",
+  "version": "0.2.1",
+  "homepage": "https://github.com/oztu/boilerplate-gulp-angular",
+  "authors": [
+    "Ozan Turgut <ozanturgut@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-mocks": "~1.2.21",
+    "angular": "~1.2.21"
+  }
+}

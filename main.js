@@ -1,9 +1,12 @@
 'use strict';
 
-var source = require('vinyl-source-stream'),
+var fs = require('fs'),
+  path = require('path'),
+  source = require('vinyl-source-stream'),
   sourcemaps = require('gulp-sourcemaps'),
   browserify = require('browserify'),
   uglify = require('gulp-uglify'),
+  concat = require('gulp-concat'),
   rename = require('gulp-rename'),
   less = require('gulp-less'),
   csso = require('gulp-csso'),
@@ -11,25 +14,30 @@ var source = require('vinyl-source-stream'),
   beautify = require('js-beautify'),
   del = require('del'),
   recess = require('gulp-recess'),
-  
-  jasmine = require('gulp-jasmine'),
-  istanbul = require('gulp-istanbul'),
-  
-  jasmineReporters = require('jasmine-reporters'),
+
+
+  ngAnnotate = require('gulp-ng-annotate'),
+  templateCache = require('gulp-angular-templatecache'),
+
+  karma = require('karma').server,
+
+  protractor = require('gulp-protractor').protractor,
+  webdriver_update = require('gulp-protractor').webdriver_update,
+  webdriver_standalone = require('gulp-protractor').webdriver_standalone,
 
   _ = require('lodash'),
   plato = require('gulp-plato'),
   gutil = require('gulp-util'),
   es = require('event-stream'),
-  fs = require('fs'),
+
   connect = require('gulp-connect'),
   watch = require('gulp-watch'),
-  path = require('path'),
   jsStylish = require('jshint-stylish');
 
 var defaultJSBeautifyConfig = require('./defaultJSBeautifyConfig'),
   defaultJSHintConfig = require('./defaultJSHintConfig'),
   defaultConnectConfig = require('./defaultConnectConfig'),
+  defaultKarmaConfig = require('./defaultKarmaConfig'),
   defaultRecessConfig = require('./defaultRecessConfig');
 
 module.exports = function(gulp, options){
@@ -41,10 +49,15 @@ module.exports = function(gulp, options){
     jsHintConfig = _.assign(defaultJSHintConfig, options.jsHintConfig),
     recessConfig = _.assign(defaultRecessConfig, options.recessConfig),
     connectConfig = _.assign(defaultConnectConfig, options.connectConfig),
+    karmaConfig = _.assign(defaultKarmaConfig, options.karmaConfig),
+
+    protractorConfigFile = options.protractorConfigFile || path.resolve(__dirname, './defaultProtractorConfig'),
+
     pkg = options.pkg || {},
     name = options.name || pkg.name || 'seed',
     jsSrcDir = './src',
     cssSrcDir = './src',
+    templateSrcDir = './src',
     buildDir = './build',
     distDir = './dist',
     devDir = './dev',
@@ -74,6 +87,10 @@ module.exports = function(gulp, options){
       cssSrcDir = pkg.directories.cssSrc;
 
       if(!options.cssMain) cssMain = cssSrcDir + '/' + name + '.less';
+    }
+
+    if(pkg.directories.templateSrc !== undefined){
+      templateSrcDir = pkg.directories.templateSrc;
     }
   }
 
@@ -134,13 +151,24 @@ module.exports = function(gulp, options){
       jsSrcDir + '/**/*.js',
       devDir + '/**/*.js',
       'gulpfile.js'
-    ], ['js-lint', 'test']);
+    ], ['js-lint']);
 
     if(!cssDisabled){
       gulp.watch(cssSrcDir + '/**/*.css', ['css', 'lint-css']);
     }
 
-    return test();
+    var config = _.assign({},
+      karmaConfig,
+      {
+        files: [
+          __dirname + '/bower_components/angular/angular.js',
+          __dirname + '/bower_components/angular-mocks/angular-mocks.js',
+          buildDir + '/templates.js',
+          jsSrcDir + '/**/*.js'
+        ]
+      });
+    
+    karma.start(config);
   });
 
   gulp.task('example', ['build'], function() {
@@ -163,16 +191,35 @@ module.exports = function(gulp, options){
   //*************************//
   // JavaScript Bundler Tasks //
   //*************************//
+  // Generates a Template bundle of templatesDir.
+  gulp.task('js-templates', ['clean-build'], function(){
+    return gulp.src(templateSrcDir + '/**/*.html')
+      .pipe(templateCache({
+        standalone: true,
+        module: 'templates',
+        sourcemap: true
+      }))
+      .pipe(gulp.dest(buildDir)); 
+  });
+
   // Generates a JavaScript bundle of jsMain and its dependencies using
   // browserify in the build directory with an embedded sourcemap.
-  gulp.task('js', ['clean-build'], function() {
+  gulp.task('js-scripts', ['clean-build'], function(){
     return browserify(jsMain)
       .bundle({
         debug: true,
         standalone: name
-      }) // Debug enables source maps
+      })
       .pipe(source(path.basename(jsMain))) // gulpifies the browserify stream
       .pipe(rename(name + '.js'))
+      .pipe(gulp.dest(buildDir));
+  });
+
+  gulp.task('js', ['js-scripts', 'js-templates'], function() {
+    return gulp.src([buildDir + '/templates.js', buildDir + '/' + name + '.js'])
+      .pipe(sourcemaps.init())
+      .pipe(concat(name + '.js'))
+      .pipe(sourcemaps.write())
       .pipe(gulp.dest(buildDir));
   });
 
@@ -180,6 +227,7 @@ module.exports = function(gulp, options){
   // accompanying source map file.
   gulp.task('js-min', ['js', 'clean-dist'], function() {
     return gulp.src(buildDir + '/' + name + '.js')
+      .pipe(ngAnnotate({add:true, single_quotes: true}))
       .pipe(sourcemaps.init())
       .pipe(uglify())
       .pipe(rename(name + '.min.js'))
@@ -221,48 +269,43 @@ module.exports = function(gulp, options){
 
 
   //*******************//
-  // Quality Ensurance //
+  // Quality Assurance //
   //*******************//
 
   // Generates test coverage and code maintainabilty reports.
   gulp.task('report', ['test', 'plato']);
 
-  function test(done){
-    if (continuous){
-      return gulp.src([
-        jsSrcDir + '/**/*.js'
-      ]).pipe(jasmine({
-          includeStackTrace: true
-        }))
-    } else {
-      var junitReporter = new jasmineReporters.JUnitXmlReporter({
-          savePath: 'reports/junit',
-          consolidateAll: false
+  gulp.task('test', ['unit-test', 'e2e-test']);
+
+  gulp.task('webdriver-update', webdriver_update);
+  gulp.task('webdriver-start', ['webdriver-update'], webdriver_standalone);
+
+  gulp.task('e2e-test', ['js', 'webdriver-update'], function(){
+    return gulp.src(['test/**/*Spec.js'])
+      .pipe(protractor({
+        configFile: protractorConfigFile
+    })).on('error', function(e){ 
+        console.error(e);
+    });
+  });
+
+  gulp.task('unit-test', ['js'], function(done){
+    var config = _.assign({},
+      karmaConfig,
+      {
+        files: [
+          __dirname + '/bower_components/angular/angular.js',
+          __dirname + '/bower_components/angular-mocks/angular-mocks.js',
+          buildDir + '/templates.js',
+          jsSrcDir + '/**/*.js'
+        ],
+        singleRun: true,
+        autoWatch: false,
       });
 
-      gulp.src([
-        jsSrcDir + '/**/*.js',
-        '!' + jsSrcDir + '/**/*Spec.js' // exclude tests
-      ]).pipe(istanbul())
-        .on('finish', function () {
-          gulp.src([
-            jsSrcDir + '/**/*.js'
-          ]).pipe(jasmine({
-              reporter: junitReporter,
-              verbose: true,
-              includeStackTrace: true
-            }))
-          .pipe(istanbul.writeReports({
-            dir: './reports/coverage',
-            reporters: [ 'lcovonly', 'text', 'json', 'html', 'cobertura' ]
-          }))
-          .on('end', done);
-      });
-    }
-  };
+    config.coverageReporter.reporters.push({ type: 'text' });
 
-  gulp.task('test', function(done) {
-    return test(done);
+    karma.start(config, done);
   });
 
   // Generates a maintainability report using Plato.

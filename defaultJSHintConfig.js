@@ -69,6 +69,7 @@ module.exports = {
     it: true,
     spyOn: true,
     xdescribe: true,
-    xit: true
+    xit: true,
+    angular: true
   }
 };
