@@ -49,10 +49,6 @@ module.exports = function(gulp, options){
   var name = pkg.name;
   if(options.name !== undefined) name = options.name;
 
-  // Disables the CSS build path for JavaScript-only projects
-  var cssDisabled = false;
-  if(options.cssDisabled !== undefined) cssDisabled = options.cssDisabled;
-
   // SOURCE DIRECTORIES
   // JavaScript source code and unit tests.
   var jsSrc = './src/**/*.js';
@@ -81,8 +77,11 @@ module.exports = function(gulp, options){
 
   if(options.name !== undefined) name = options.name;
 
-  var cssMain = './src/main.less';
+  var cssMain;
   if(options.cssMain !== undefined) cssMain = options.cssMain;
+
+  var cssDisabled = false;
+  if(cssMain === undefined) cssDisabled = true;
 
   // GENERATED DIRECTORIES
   var buildDir = './build';

@@ -72,7 +72,8 @@ var gulp = require('gulp'),
   angularBuilder = require('angular-builder);
 
 angularBuilder(gulp, {
-  pkg: require('./package.json'),
+  jsMain: 'path/to/js/main.js',
+  cssMain: 'path/to/css/main.less'
 });
 
 // Rest of your gulp file, potentially overwriting the angular builder tasks...
