@@ -1,5 +1,5 @@
 module.exports = {
-  browsers: ['PhantomJS', 'Chrome', 'Firefox', 'Safari'],
+  browsers: ['Chrome', 'Firefox', 'Safari'],
   frameworks: ['jasmine', 'commonjs'],
 
   preprocessors: {
