@@ -42,21 +42,22 @@ To see it in action see [client-side-seed](https://github.com/oztu/client-side-s
 # Tasks
 ```sh
 # Creates a clean, full build with testing, linting, reporting and
-# minification then copies the results to the dist folder.
-gulp # alias for gulp dist
+# minification then copies the results to the ./dist folder.
+gulp
 
-# Incrementally build JavaScript and CSS files as they're modified and then
-# execute testing and linting tasks. Also starts a server on port 3000
-# which serves both the example and build directories. If either has files which
-# change, connected browsers will automatically refresh.
+# Incrementally builds files as they're modified and then
+# executes testing and linting tasks. Also starts a server on port 3000
+# which serves both the example and build directories. Connected browsers
+# will automatically refresh when files are updated.
 gulp dev
 
-# Run unit tests once via Jasmine and generate a test and coverage reports in
-# ./report
+# Runs unit and e2e tests and generates coverage reports to ./report
 gulp test
 
-# *REWRITES* the JavaScript files by passing them through JS Beautifier with
-# the options set by jsBeautifierConfig.
+# Runs gulp test along with generating code complexity reports ./report
+gulp reports
+
+# Rewrite JavaScript source files by passing them through JS Beautifier
 gulp fix-style
 
 ```
@@ -69,7 +70,7 @@ your `gulpfile.js` (or create one):
 
 ```javascript
 var gulp = require('gulp'), 
-  angularBuilder = require('angular-builder);
+  angularBuilder = require('angular-builder');
 
 angularBuilder(gulp, {
   jsMain: 'path/to/js/main.js',
@@ -79,7 +80,7 @@ angularBuilder(gulp, {
 // Rest of your gulp file, potentially overwriting the angular builder tasks...
 ```
 
-# Default Filesystem Structure
+# Default Directory Structure
 
 * dist/ - The distributable files for this package, updated when `gulp` is run
 * build/ - The build directory used by gulp during builds.

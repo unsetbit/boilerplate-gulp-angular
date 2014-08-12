@@ -197,7 +197,7 @@ module.exports = function(gulp, options){
 
   // Creates a clean, full build with testing, linting, reporting and
   // minification then copies the results to the dist folder.
-  gulp.task('dist', ['test', 'lint', 'report', 'build-min'], 
+  gulp.task('dist', ['test', 'lint', 'reports', 'build-min'], 
     function() {
     return gulp.src([
         buildDir + '/**/*',
@@ -291,7 +291,7 @@ module.exports = function(gulp, options){
   //*******************//
 
   // Generates test coverage and code maintainabilty reports.
-  gulp.task('report', ['test', 'plato']);
+  gulp.task('reports', ['test', 'plato']);
 
   gulp.task('test', ['unit-test', 'e2e-test']);
 
