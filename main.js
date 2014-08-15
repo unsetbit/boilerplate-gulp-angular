@@ -2,6 +2,7 @@
 
 // Utilities  
 var  _ = require('lodash'),
+  parseArgs = require('minimist'),
   gutil = require('gulp-util'),
   es = require('event-stream'),
   watch = require('gulp-watch'),
@@ -107,7 +108,7 @@ module.exports = function(gulp, options){
   // Local Variables //
   //*****************//
   var continuous = (process.argv.indexOf('dev') !== -1);
-
+  var args = parseArgs(process.argv.slice(2));
 
   //*******************//
   // Convenience Tasks //
@@ -155,6 +156,7 @@ module.exports = function(gulp, options){
   gulp.task('dev', ['example'], function() {
     gulp.watch([
       jsSrc,
+      templates,
       '!' + unitTests
     ], ['js']);
 
@@ -164,7 +166,7 @@ module.exports = function(gulp, options){
     ], ['js-lint']);
 
     if(!cssDisabled){
-      gulp.watch(cssSrc, ['css', 'lint-css']);
+      gulp.watch(cssSrc, ['css', 'css-lint']);
     }
 
     var config = _.assign({},
@@ -174,8 +176,10 @@ module.exports = function(gulp, options){
         autoWatch: true,
       });
 
+    if(!config.files) config.files = [];
+    config.files.unshift(__dirname + '/bower_components/angular/angular.js');
+
     config.files = config.files.concat([
-      __dirname + '/bower_components/angular/angular.js',
       __dirname + '/bower_components/angular-mocks/angular-mocks.js',
       buildDir + '/templates.js',
       jsSrc,
@@ -186,7 +190,17 @@ module.exports = function(gulp, options){
   });
 
   gulp.task('server', ['build'], function(){
-    if(continuous) connectConfig.livereload = true;
+    if(continuous){ 
+      connectConfig.livereload = true;
+    } else {
+      connectConfig.port = 3001;
+    }
+
+    if(args.port){ 
+      connectConfig.port = args.port;
+      connectConfig.livereload = { port: parseInt(args.port, 10) + 1 };
+    }
+
     connect.server(connectConfig);
   });
 
@@ -211,20 +225,32 @@ module.exports = function(gulp, options){
   //*************************//
   // JavaScript Bundler Tasks //
   //*************************//
+
+  // Deletes generated JS files (and source maps) from the build directory.
+  gulp.task('clean-js', function(cb) {
+    del([buildDir + '/**/*.js{,map}'], cb);
+  });
+
   // Generates a Template bundle of templatesDir.
   gulp.task('js-templates', ['clean-build'], function(){
+    var config = {
+      standalone: true,
+      module: 'templates',
+      sourcemap: true
+    };
+
+    if(options.templateCache){
+      _.assign(config, options.templateCache);
+    }
+
     return gulp.src(templates)
-      .pipe(templateCache({
-        standalone: true,
-        module: 'templates',
-        sourcemap: true
-      }))
+      .pipe(templateCache(config))
       .pipe(gulp.dest(buildDir)); 
   });
 
   // Generates a JavaScript bundle of jsMain and its dependencies using
   // browserify in the build directory with an embedded sourcemap.
-  gulp.task('js-scripts', ['clean-build'], function(){
+  gulp.task('js-scripts', ['clean-js'], function(){
     return browserify(jsMain)
       .bundle({
         debug: true,
@@ -267,7 +293,7 @@ module.exports = function(gulp, options){
 
   // Generates a CSS bundle of cssMain and its dependencies using LESS
   // in the build directory with an embedded source map.
-  gulp.task('css', ['clean-build'], function() {
+  gulp.task('css', ['clean-css'], function() {
     return gulp.src(cssMain)
       .pipe(sourcemaps.init())
       .pipe(less())
@@ -324,9 +350,10 @@ module.exports = function(gulp, options){
         singleRun: true,
         autoWatch: false,
       });
-
+    if(!config.files) config.files = [];
+    config.files.unshift(__dirname + '/bower_components/angular/angular.js');
+    
     config.files = config.files.concat([
-      __dirname + '/bower_components/angular/angular.js',
       __dirname + '/bower_components/angular-mocks/angular-mocks.js',
       buildDir + '/templates.js',
       jsSrc,

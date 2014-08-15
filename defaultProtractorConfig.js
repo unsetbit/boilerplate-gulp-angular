@@ -40,6 +40,6 @@ exports.config = {
   },
   
   params: {
-    homeUrl: 'http://localhost:3000/'
+    homeUrl: 'http://localhost:3001/'
   }
 };
