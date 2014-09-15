@@ -328,7 +328,7 @@ module.exports = function(gulp, options){
 
   gulp.task('e2e-test', ['server', 'webdriver-update'], function(){
     var files = glob.sync(e2eTests);
-    if(!files.length){
+    if(!files.length || args.headless){
       connect.serverClose();
       return;
     }
@@ -361,6 +361,10 @@ module.exports = function(gulp, options){
     ]);
 
     config.coverageReporter.reporters.push({ type: 'text', dir: 'reports/test/unit/coverage' });
+
+    if(args.headless){
+      config.browsers = ['PhantomJS'];
+    }
 
     karma.start(config, done);
   });
