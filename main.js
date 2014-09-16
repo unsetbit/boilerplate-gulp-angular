@@ -179,6 +179,8 @@ module.exports = function(gulp, options){
       gulp.watch(cssSrc, ['css', 'css-lint']);
     }
 
+    gulp.watch([buildDir + '/**/*'], ['copy-dev-to-dist'])
+
     var config = _.assign({},
       karmaConfig,
       {
@@ -199,9 +201,27 @@ module.exports = function(gulp, options){
     karma.start(config);
   });
 
-  gulp.task('server', ['build'], function(){
+  gulp.task('copy-dev-to-dist-with-build', ['build'], function(){
+    return gulp.src([
+        buildDir + '/**/*',
+        '!' + buildDir + '/templates.js'
+      ])
+      .pipe(gulp.dest(distDir));
+  });
+
+  gulp.task('copy-dev-to-dist', function(){
+    return gulp.src([
+        buildDir + '/**/*',
+        '!' + buildDir + '/templates.js'
+      ])
+      .pipe(gulp.dest(distDir));
+  });
+
+  gulp.task('server', ['build', 'copy-dev-to-dist-with-build'], function(){
+    if(args.serverless) return;
     if(continuous){ 
       connectConfig.livereload = true;
+      connectConfig.port = 3000;
     } else {
       connectConfig.port = 3001;
     }
@@ -215,6 +235,7 @@ module.exports = function(gulp, options){
   });
 
   gulp.task('example', ['server'], function() {
+    if(args.serverless) return;
     watch({
       glob: connectConfig.root.map(function(dir){ return dir + '/**/*'; })
     }).pipe(connect.reload());
