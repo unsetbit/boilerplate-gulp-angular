@@ -1,6 +1,6 @@
 {
   "name": "boilerplate-gulp-angular",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Boilerplate gulp tasks for angular packages",
   "keywords": [
     "gulp",
@@ -52,7 +52,10 @@
     "mkdirp": "^0.5.0",
     "glob": "^4.0.5",
     "minimist": "^1.1.0",
-    "karma-phantomjs-launcher": "^0.1.4"
+    "karma-phantomjs-launcher": "^0.1.4",
+    "gulp-git": "^0.5.0",
+    "semver": "^3.0.1",
+    "git-rev": "^0.2.1"
   },
   "scripts": {
     "test": "exit 1"

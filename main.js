@@ -10,6 +10,9 @@ var  _ = require('lodash'),
   path = require('path'),
   del = require('del'),
   glob = require('glob'),
+  semver = require('semver'),
+  gitrev = require('git-rev'),
+  exec = require('child_process').exec,
   source = require('vinyl-source-stream');
 
 // Gulp Plugins
@@ -23,6 +26,7 @@ var sourcemaps = require('gulp-sourcemaps'),
   beautify = require('js-beautify'),
   recess = require('gulp-recess'),
   plato = require('gulp-plato'),
+  git = require('gulp-git'),
   connect = require('gulp-connect');
 
 // Components without existing gulp plugins
@@ -85,6 +89,11 @@ module.exports = function(gulp, options){
   var cssDisabled = false;
   if(cssMain === undefined) cssDisabled = true;
 
+  // Bower package repo management
+  var bowerPackageRepo;
+  if(pkg.repository !== undefined && pkg.repository.url !== undefined) bowerPackageRepo = pkg.repository.url;
+  var bowerPackageRepoDir = './bower-package-repo';
+
   // GENERATED DIRECTORIES
   var buildDir = './build';
   if(options.buildDir !== undefined) buildDir = options.buildDir;
@@ -94,6 +103,7 @@ module.exports = function(gulp, options){
 
   var reportsDir = './reports';
   if(options.reportsDir !== undefined) reportsDir = options.reportsDir;
+
 
   // DEFAULT COMPONENT CONFIGURATIONS
   var jsBeautifyConfig = _.merge(require('./defaultJSBeautifyConfig'), options.jsBeautifyConfig);
@@ -441,5 +451,109 @@ module.exports = function(gulp, options){
           ));
         }
       }));
+  });
+
+
+  //*******************************//
+  // Bower package repo management //
+  //*******************************//
+
+  gulp.task('clone-bower-package', function(cb){
+    if(!bowerPackageRepo) return cb();
+    del([bowerPackageRepoDir], function(err){
+      git.clone(bowerPackageRepo, {
+        args: bowerPackageRepoDir
+      }, function(){
+        del([
+          bowerPackageRepoDir + '/**/*',
+          '!' + bowerPackageRepoDir + '/bower.json'
+        ], function(err){
+          if(err) throw err;
+          cb();
+        });
+      });
+    });
+  });
+
+  function execInBowerPackageRepoDir(cmd, cb){
+    exec(cmd, {cwd: bowerPackageRepoDir}, function(err, stdout, stderr){
+      if(err) console.error(err, stderr);
+      console.log(stdout);
+      cb(err);
+    });
+  }
+
+  function pushRelease(pkg, commitMsg, cb){
+    execInBowerPackageRepoDir('git add -A', function(err){
+      if(err) return cb();
+
+      execInBowerPackageRepoDir('git commit -a -m "'+ commitMsg + '"', function(err){
+        if(err) return cb();
+        
+        execInBowerPackageRepoDir('git tag v'+ pkg.version, function(err){
+          if(err) return cb();
+
+          execInBowerPackageRepoDir('git push --tags origin master', cb);
+        });
+      });
+    });    
+  }
+
+  gulp.task('generate-bower-package', ['dist', 'clone-bower-package'], function(cb){
+    if(!bowerPackageRepo) return cb();
+    return gulp.src([distDir + '/**/*'])
+      .pipe(gulp.dest(bowerPackageRepoDir));
+  });
+
+  gulp.task('publish-prerelease', ['generate-bower-package'], function(cb){
+    gitrev.short(function(sha){
+      // If the package repo dir has a bower.json use it for the version
+      if(fs.existsSync(bowerPackageRepoDir + '/bower.json')){
+        var innerVersion = JSON.parse(fs.readFileSync(bowerPackageRepoDir + '/bower.json')).version;
+        // If the parent version isn't greater than the released package, then use the
+        // released package version to enable incrementing build counts.
+        if(semver.gte(innerVersion, pkg.version + '-build.0')){
+          pkg.version = innerVersion;
+        }
+      }
+      
+      var version = pkg.version;
+      if(version.indexOf('-') === -1) {
+        version = semver.inc(version, 'patch');
+        version += '-build.0'; 
+      } else {
+        version = semver.inc(version, 'prerelease');
+      }
+
+      version += '+sha.' + sha;
+    
+      pkg.version = version;
+      
+      var pkgString = JSON.stringify(pkg, null, 4);
+      fs.writeFileSync(bowerPackageRepoDir + '/bower.json', pkgString);
+
+      var commitMsg = 'Prerelease: v' + pkg.version;
+      pushRelease(pkg, commitMsg, cb);
+    });
+  });
+
+  gulp.task('publish-release', ['generate-bower-package'], function(cb){
+    gitrev.short(function(sha){
+      // If the package repo dir has a bower.json use it for the version
+      if(fs.existsSync(bowerPackageRepoDir + '/bower.json')){
+        var innerVersion = JSON.parse(fs.readFileSync(bowerPackageRepoDir + '/bower.json')).version;
+        if(!semver.gt(pkg.version, innerVersion)){
+          console.log(pkg.version + ' is less than ' + innerVersion + '! Refusing release.');
+          return;
+        }
+      }
+
+      var pkgString = JSON.stringify(pkg, null, 4);
+      fs.writeFileSync(bowerPackageRepoDir + '/bower.json', pkgString);
+
+      var commitMsg = 'Release: v' + pkg.version + ' at rev ' + sha;
+      
+      pushRelease(pkg, commitMsg, cb);
+    });
   });
 };
