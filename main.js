@@ -502,7 +502,7 @@ module.exports = function(gulp, options){
   gulp.task('generate-bower-package', ['dist', 'clone-bower-package'], function(cb){
     if(!bowerPackageRepo) return cb();
     return gulp.src([distDir + '/**/*'])
-      .pipe(gulp.dest(bowerPackageRepoDir));
+      .pipe(gulp.dest(bowerPackageRepoDir + '/dist'));
   });
 
   gulp.task('publish-prerelease', ['generate-bower-package'], function(cb){
