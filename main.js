@@ -397,6 +397,10 @@ module.exports = function(gulp, options){
       config.browsers = ['PhantomJS'];
     }
 
+    if(config.browsers.indexOf('PhantomJS') !== -1){
+      config.files.unshift(__dirname + '/lib/phantomJsPolyfills.js');
+    }
+
     karma.start(config, done);
   });
 
