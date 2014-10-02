@@ -168,7 +168,7 @@ module.exports = function(gulp, options){
       jsSrc,
       templates,
       '!' + unitTests
-    ], ['js']);
+    ], ['dev-js']);
 
     gulp.watch([
       jsSrc,
@@ -176,10 +176,10 @@ module.exports = function(gulp, options){
     ], ['js-lint']);
 
     if(!cssDisabled){
-      gulp.watch(cssSrc, ['css', 'css-lint']);
+      gulp.watch(cssSrc, ['dev-css']);
     }
 
-    gulp.watch([buildDir + '/**/*'], ['copy-dev-to-dist'])
+    gulp.watch([buildDir + '/**/' + name + '*'], ['copy-dev-to-dist'])
 
     var config = _.assign({},
       karmaConfig,
@@ -199,6 +199,21 @@ module.exports = function(gulp, options){
     ]);
     
     karma.start(config);
+  });
+
+  gulp.task('dev-js', ['js'], function(){
+    return gulp.src([
+        buildDir + '/**/*.js',
+        '!' + buildDir + '/templates.js'
+      ])
+      .pipe(gulp.dest(distDir));
+  });
+
+  gulp.task('dev-css', ['css', 'css-lint'], function(){
+    return gulp.src([
+        buildDir + '/**/*.css'
+      ])
+      .pipe(gulp.dest(distDir));
   });
 
   gulp.task('copy-dev-to-dist-with-build', ['build'], function(){
@@ -263,7 +278,7 @@ module.exports = function(gulp, options){
   });
 
   // Generates a Template bundle of templatesDir.
-  gulp.task('js-templates', ['clean-build'], function(){
+  gulp.task('js-templates', ['clean-js'], function(){
     var config = {
       standalone: true,
       module: 'templates',
@@ -286,7 +301,7 @@ module.exports = function(gulp, options){
       .bundle({
         debug: true,
         standalone: name
-      })
+      }).on('error', function(e){console.log(e);})
       .pipe(source(path.basename(jsMain))) // gulpifies the browserify stream
       .pipe(rename(name + '.js'))
       .pipe(gulp.dest(buildDir));
