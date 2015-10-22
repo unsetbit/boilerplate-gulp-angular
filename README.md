@@ -65,12 +65,12 @@ gulp fix-style
 # Use
 If you don't have a `package.json` file at the root of your code repository, execute `npm init` to generate one. Modify the "main" key in package.json to point to your root CommonJS module, whatever is assigned to `module.exports` or `exports` in this module will be "exported" to the `window.<package.name>` variable on browsers.
 
-Next, executing `npm install --save-dev gulp angular-builder`. Then modify
+Next, executing `npm install --save-dev gulp boilerplate-gulp-angular`. Then modify
 your `gulpfile.js` (or create one):
 
 ```javascript
 var gulp = require('gulp'), 
-  angularBuilder = require('angular-builder');
+  angularBuilder = require('boilerplate-gulp-angular');
 
 angularBuilder(gulp, {
   jsMain: 'path/to/js/main.js',
