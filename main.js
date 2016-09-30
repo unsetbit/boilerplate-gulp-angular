@@ -1,6 +1,6 @@
 'use strict';
 
-// Utilities  
+// Utilities
 var  _ = require('lodash'),
   parseArgs = require('minimist'),
   gutil = require('gulp-util'),
@@ -25,7 +25,6 @@ var sourcemaps = require('gulp-sourcemaps'),
   jshint = require('gulp-jshint'),
   beautify = require('js-beautify'),
   recess = require('gulp-recess'),
-  plato = require('gulp-plato'),
   git = require('gulp-git'),
   connect = require('gulp-connect');
 
@@ -45,7 +44,7 @@ module.exports = function(gulp, options){
   //***************//
   // Configuration //
   //***************//
-  
+
   options = options || {};
 
   var pkg = {};
@@ -61,7 +60,7 @@ module.exports = function(gulp, options){
   if(options.jsSrc !== undefined) jsSrc = options.jsSrc;
 
   var unitTests = './src/**/*Spec.js';
-  if(options.unitTests !== undefined) unitTests = options.unitTests; 
+  if(options.unitTests !== undefined) unitTests = options.unitTests;
 
   var e2eTests = './test/**/*Spec.js';
   if(options.e2eTests !== undefined) e2eTests = options.e2eTests;
@@ -123,8 +122,8 @@ module.exports = function(gulp, options){
   //*******************//
   // Convenience Tasks //
   //*******************//
-  
-  // The default task will run dist, which includes build, optimizations, tests, 
+
+  // The default task will run dist, which includes build, optimizations, tests,
   // lints, and generates coverage reports.
   gulp.task('default', ['dist']);
 
@@ -138,7 +137,7 @@ module.exports = function(gulp, options){
   // source maps.
   var buildMinTasks = ['js-min'];
   if(!cssDisabled) buildMinTasks.push('css-min');
-  
+
   gulp.task('build-min', buildMinTasks);
 
 
@@ -197,7 +196,7 @@ module.exports = function(gulp, options){
       jsSrc,
       unitTests
     ]);
-    
+
     karma.start(config);
   });
 
@@ -234,14 +233,14 @@ module.exports = function(gulp, options){
 
   gulp.task('server', ['build', 'copy-dev-to-dist-with-build'], function(){
     if(args.serverless) return;
-    if(continuous){ 
+    if(continuous){
       connectConfig.livereload = true;
       connectConfig.port = 3000;
     } else {
       connectConfig.port = 3001;
     }
 
-    if(args.port){ 
+    if(args.port){
       connectConfig.port = args.port;
       connectConfig.livereload = { port: parseInt(args.port, 10) + 1 };
     }
@@ -259,7 +258,7 @@ module.exports = function(gulp, options){
 
   // Creates a clean, full build with testing, linting, reporting and
   // minification then copies the results to the dist folder.
-  gulp.task('dist', ['test', 'lint', 'reports', 'build-min'], 
+  gulp.task('dist', ['test', 'lint', 'reports', 'build-min'],
     function() {
     return gulp.src([
         buildDir + '/**/*',
@@ -291,7 +290,7 @@ module.exports = function(gulp, options){
 
     return gulp.src(templates)
       .pipe(templateCache(config))
-      .pipe(gulp.dest(buildDir)); 
+      .pipe(gulp.dest(buildDir));
   });
 
   // Generates a JavaScript bundle of jsMain and its dependencies using
@@ -365,7 +364,7 @@ module.exports = function(gulp, options){
   //*******************//
 
   // Generates test coverage and code maintainabilty reports.
-  gulp.task('reports', ['test', 'plato']);
+  gulp.task('reports', ['test']);
 
   gulp.task('test', ['unit-test', 'e2e-test']);
 
@@ -382,9 +381,9 @@ module.exports = function(gulp, options){
     return gulp.src([e2eTests])
       .pipe(protractor({
         configFile: protractorConfigFile
-    })).on('error', function(){ 
+    })).on('error', function(){
       connect.serverClose();
-    }).on('close', function(){ 
+    }).on('close', function(){
       connect.serverClose();
     });
   });
@@ -398,7 +397,7 @@ module.exports = function(gulp, options){
       });
     if(!config.files) config.files = [];
     config.files.unshift(__dirname + '/bower_components/angular/angular.js');
-    
+
     config.files = config.files.concat([
       __dirname + '/bower_components/angular-mocks/angular-mocks.js',
       buildDir + '/templates.js',
@@ -417,18 +416,6 @@ module.exports = function(gulp, options){
     }
 
     karma.start(config, done);
-  });
-
-  // Generates a maintainability report using Plato.
-  gulp.task('plato', function(done){
-    return gulp.src([
-      jsSrc,
-      '!' + unitTests // exclude tests
-    ]).pipe(plato(reportsDir + '/plato', { 
-        jshint: {
-          options: jsHintConfig
-        }
-      }));
   });
 
   // Runs the JavaScript sources files through JSHint according to the options
@@ -466,7 +453,7 @@ module.exports = function(gulp, options){
       .pipe(recess(recessConfig));
   });
 
-  // *REWRITES* This project's JavaScript files, passing them through JS 
+  // *REWRITES* This project's JavaScript files, passing them through JS
   // Beautifier with the options in jsBeautifyConfig
   gulp.task('fix-style', function() {
     return gulp.src([
@@ -485,8 +472,8 @@ module.exports = function(gulp, options){
           });
         } catch (err) {
           return cb(new gutil.PluginError(
-            'fix-style', 
-            err, 
+            'fix-style',
+            err,
             jsBeautifyConfig
           ));
         }
@@ -529,14 +516,14 @@ module.exports = function(gulp, options){
 
       execInBowerPackageRepoDir('git commit -a -m "'+ commitMsg + '"', function(err){
         if(err) return cb();
-        
+
         execInBowerPackageRepoDir('git tag v'+ pkg.version, function(err){
           if(err) return cb();
 
           execInBowerPackageRepoDir('git push --tags origin master', cb);
         });
       });
-    });    
+    });
   }
 
   gulp.task('generate-bower-package', ['dist', 'clone-bower-package'], function(cb){
@@ -556,19 +543,19 @@ module.exports = function(gulp, options){
           pkg.version = innerVersion;
         }
       }
-      
+
       var version = pkg.version;
       if(version.indexOf('-') === -1) {
         version = semver.inc(version, 'patch');
-        version += '-build.0'; 
+        version += '-build.0';
       } else {
         version = semver.inc(version, 'prerelease');
       }
 
       version += '+sha.' + sha;
-    
+
       pkg.version = version;
-      
+
       var pkgString = JSON.stringify(pkg, null, 4);
       fs.writeFileSync(bowerPackageRepoDir + '/bower.json', pkgString);
 
@@ -592,7 +579,7 @@ module.exports = function(gulp, options){
       fs.writeFileSync(bowerPackageRepoDir + '/bower.json', pkgString);
 
       var commitMsg = 'Release: v' + pkg.version + ' at rev ' + sha;
-      
+
       pushRelease(pkg, commitMsg, cb);
     });
   });
