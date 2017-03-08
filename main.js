@@ -59,6 +59,9 @@ module.exports = function(gulp, options){
   var jsSrc = './src/**/*.js';
   if(options.jsSrc !== undefined) jsSrc = options.jsSrc;
 
+  var disableTests = false;
+  if(options.disableTests) disableTests = true;
+
   var unitTests = './src/**/*Spec.js';
   if(options.unitTests !== undefined) unitTests = options.unitTests;
 
@@ -180,24 +183,26 @@ module.exports = function(gulp, options){
 
     gulp.watch([buildDir + '/**/' + name + '*'], ['copy-dev-to-dist'])
 
-    var config = _.assign({},
-      karmaConfig,
-      {
-        singleRun: false,
-        autoWatch: true,
-      });
+    if (!disableTests) {
+      var config = _.assign({},
+        karmaConfig,
+        {
+          singleRun: false,
+          autoWatch: true,
+        });
 
-    if(!config.files) config.files = [];
-    config.files.unshift(__dirname + '/bower_components/angular/angular.js');
+      if(!config.files) config.files = [];
+      config.files.unshift(__dirname + '/bower_components/angular/angular.js');
 
-    config.files = config.files.concat([
-      __dirname + '/bower_components/angular-mocks/angular-mocks.js',
-      buildDir + '/templates.js',
-      jsSrc,
-      unitTests
-    ]);
+      config.files = config.files.concat([
+        __dirname + '/bower_components/angular-mocks/angular-mocks.js',
+        buildDir + '/templates.js',
+        jsSrc,
+        unitTests
+      ]);
 
-    karma.start(config);
+      karma.start(config);
+    }
   });
 
   gulp.task('dev-js', ['js'], function(){
@@ -372,6 +377,11 @@ module.exports = function(gulp, options){
   gulp.task('webdriver-start', ['webdriver-update'], webdriver_standalone);
 
   gulp.task('e2e-test', ['server', 'webdriver-update'], function(){
+    if (disableTests) {
+      done();
+      return;
+    }
+    
     var files = glob.sync(e2eTests);
     if(!files.length || args.headless){
       connect.serverClose();
@@ -389,6 +399,11 @@ module.exports = function(gulp, options){
   });
 
   gulp.task('unit-test', ['js'], function(done){
+    if (disableTests) {
+      done();
+      return;
+    }
+
     var config = _.assign({},
       karmaConfig,
       {
