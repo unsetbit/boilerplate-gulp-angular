@@ -381,7 +381,7 @@ module.exports = function(gulp, options){
       done();
       return;
     }
-    
+
     var files = glob.sync(e2eTests);
     if(!files.length || args.headless){
       connect.serverClose();
